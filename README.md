@@ -12,7 +12,7 @@ npm run setup
 
 This installs the locked dependencies, fills missing development settings in `.env`, starts local PostgreSQL, applies the schema, and starts the API and frontend. The generated app secret is reused on subsequent runs. The default retention is seven days for development. If you set a custom `DATABASE_URL`, setup uses that database instead of starting Docker, so make sure it is a development database with schema creation privileges.
 
-Open `http://localhost:5173` after both servers start. To restart the app while PostgreSQL is running, use `npm run dev`. To try the built bundle locally, run `npm run build` and `npm start`, then open `http://localhost:3000`. See [the environment example](.env.example) for optional settings such as `ORGANIZER_NAME` and `ORGANIZER_EMAIL`.
+Open `http://localhost:5173` after both servers start. To restart the app while PostgreSQL is running, use `npm run dev`. To try the built bundle locally, run `npm run build` and `npm start`, then open `http://localhost:3000`. The [environment example](.env.example) is for the production Node service. Local setup generates its own development settings.
 
 Development can run without Google and Turnstile. Submissions save to PostgreSQL and show **Received — processing** until a configured Google worker completes them. Use synthetic forms and images during development.
 
@@ -55,7 +55,9 @@ The worker reserves five Drive IDs before creating storage, verifies the expecte
 
 Use a long-running Node.js/container host with a private managed PostgreSQL database. The process runs the HTTP API and retry worker together and needs network access to PostgreSQL and Google. Use a database connection that supports PostgreSQL session advisory locks (a direct connection or session pool). Keep the database encrypted at rest, use TLS for remote DB connections, and limit its access to the application and operators. Keep `APP_SECRET` stable for the lifecycle of the database because it keys duplicate detection and receipt lookups.
 
-Build the app, then configure the production variables in your host’s environment or secret manager. Set an approved `RETENTION_DAYS` value and generate a dedicated, stable production `APP_SECRET`.
+The Vercel Vite deployment publishes the static frontend. A `404` from `/api/config` or `/healthz` on that deployment indicates that the request did not reach the Express server. Serve the built frontend and API from the same Node service for this deployment model. Vercel Functions have a 4.5 MB request payload limit, while the registration route accepts four images of up to 5 MiB each.
+
+Build the app, then configure the production variables from [`.env.example`](.env.example) in your host’s environment or secret manager. Set an approved `RETENTION_DAYS` value and generate a dedicated, stable production `APP_SECRET`. If using organizer OAuth without mounted secret files, set `GOOGLE_REFRESH_TOKEN` and both resource IDs as well as the client ID and secret. The local provisioning files must stay private.
 
 For a source deployment, run `npm ci && npm run build` and set the start command to:
 
